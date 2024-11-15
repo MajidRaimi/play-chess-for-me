@@ -1,13 +1,63 @@
-from shapely.geometry import Polygon
+import os
+import cv2
 import numpy as np
+from PIL import Image
+from shapely.geometry import Polygon
 from . import PiecesDetector, PerspectiveTransformer
 
 class ChessPieceMapper:
+
+        
+
     @staticmethod
     def chess_pieces_detector(image):
         results = PiecesDetector.detect_pieces(image)
         boxes = results[0].boxes
         detections = boxes.xyxy.numpy() # type: ignore
+
+        # Save debug image if DEBUG is true
+        if os.getenv('DEBUG', 'false').lower() == 'true' or True:
+            # Dictionary for piece names
+            di = {0: 'b', 1: 'k', 2: 'n', 3: 'p', 4: 'q', 5: 'r', 6: 'B', 7: 'K', 8: 'N', 9: 'P', 10: 'Q', 11: 'R'}
+            
+            # Convert PIL Image to numpy array if needed
+            if isinstance(image, Image.Image):
+                img_array = np.array(image)
+            else:
+                img_array = image.copy()
+            
+            # Draw boxes and labels on the image
+            for i, detection in enumerate(detections):
+                x1, y1, x2, y2 = map(int, detection[:4])
+                # Draw rectangle
+                cv2.rectangle(img_array, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                
+                # Get piece name and confidence
+                piece_class = boxes.cls[i].item()
+                confidence = float(boxes.conf[i].item()) * 100  # convert to percentage
+                piece_name = f"{di[piece_class]} ({confidence:.0f}%)"
+                
+                # Calculate text position (center of box)
+                text_x = int((x1 + x2) / 2)
+                text_y = int((y1 + y2) / 2)
+                
+                # Get text size for centering
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                font_scale = 0.8
+                thickness = 2
+                (text_width, text_height), _ = cv2.getTextSize(piece_name, font, font_scale, thickness)
+                
+                # Draw text with background for better visibility
+                cv2.putText(img_array, piece_name, 
+                          (text_x - text_width//2, text_y + text_height//2),
+                          font, font_scale, (0, 0, 0), thickness + 1)  # black outline
+                cv2.putText(img_array, piece_name, 
+                          (text_x - text_width//2, text_y + text_height//2),
+                          font, font_scale, (255, 255, 255), thickness)  # white text
+            
+            # Save the image
+            debug_image = Image.fromarray(img_array)
+            debug_image.save('pipe/04_pieces.png')
 
         return detections, boxes
 

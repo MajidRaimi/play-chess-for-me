@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from PIL import Image
 from shapely.geometry import Polygon
+import os
 
 class PerspectiveTransformer:
     @staticmethod
@@ -39,7 +40,10 @@ class PerspectiveTransformer:
 
         M = cv2.getPerspectiveTransform(rect, dst)
         warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
-
+        
+        if os.getenv('DEBUG', 'false').lower() == 'true' or True:
+            output_path = os.path.join(f'pipe/02_transformed.png')
+            cv2.imwrite(output_path, cv2.cvtColor(warped, cv2.COLOR_RGB2BGR))
         return Image.fromarray(warped, "RGB")
 
     @staticmethod
