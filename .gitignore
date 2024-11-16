@@ -1,0 +1,9 @@
+.env
+
+.DS_Store
+
+__pycache__
+
+env
+
+/tests
