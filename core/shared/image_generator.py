@@ -1,11 +1,8 @@
 import chess
 import chess.svg
-import svgwrite
-from PIL import Image, ImageDraw
 import os
-import sys
-from contextlib import redirect_stdout, redirect_stderr
-from io import StringIO
+from contextlib import redirect_stdout
+from html2image import Html2Image
 
 class ImageGenerator:
 
@@ -17,25 +14,37 @@ class ImageGenerator:
         # Create the chess board
         board = chess.Board(fen)
 
-        # Use chess.svg to generate SVG data
-        svg_data = chess.svg.board(board=board)
+        # Add arrows for the best move, if provided
+        arrows = []
+        if best_move_output:
+            from_square = chess.parse_square(best_move_output["from"])
+            to_square = chess.parse_square(best_move_output["to"])
+            arrows = [(from_square, to_square)]
+
+        # Use chess.svg to generate SVG data with arrows
+        svg_data = chess.svg.board(board=board, arrows=arrows)
 
         # Create output path
         os.makedirs("pipe", exist_ok=True)
         png_path = os.path.join("pipe", "06_digital_image.png")
 
-        # Redirect stdout to devnull to suppress output
-        import sys
+        # Suppress stdout output from html2image
         with open(os.devnull, 'w') as devnull:
             with redirect_stdout(devnull):
                 # Convert SVG to PNG using html2image
-                from html2image import Html2Image
                 hti = Html2Image(
                     output_path='pipe',
                     custom_flags=['--headless=new', '--disable-gpu', '--log-level=3', '--silent'],
-                    size=(400, 400)
                 )
-                
+
                 # Create HTML with the SVG and save as PNG
-                html = f'<html><body style="margin:0;padding:0;">{svg_data}</body></html>'
-                hti.screenshot(html_str=html, save_as="06_digital_image.png", size=(400, 400))
+                html = f'''
+                <html>
+                    <body style="margin:0;padding:0;display:flex;justify-content:center;align-items:center;background:#fff;">
+                        <div style="width:100%;height:100%;">
+                            {svg_data.replace('<svg', '<svg width="100%" height="100%"')}
+                        </div>
+                    </body>
+                </html>
+                '''
+                hti.screenshot(html_str=html, save_as="06_digital_image.png")
