@@ -9,6 +9,7 @@ contourpy
 cssselect2
 cycler
 defusedxml
+drawsvg
 filelock
 filetype
 fonttools
@@ -49,6 +50,7 @@ seaborn
 shapely
 six
 svglib
+svgwrite
 sympy
 tabulate
 tinycss2

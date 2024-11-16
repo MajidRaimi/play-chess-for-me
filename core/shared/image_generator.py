@@ -1,32 +1,41 @@
 import chess
 import chess.svg
-from PIL import Image
-import cairosvg
+import svgwrite
+from PIL import Image, ImageDraw
 import os
-from io import BytesIO
-
+import sys
+from contextlib import redirect_stdout, redirect_stderr
+from io import StringIO
 
 class ImageGenerator:
+
     def __init__(self):
         pass
 
     @staticmethod
     def generate_image(fen, best_move_output=None):
+        # Create the chess board
         board = chess.Board(fen)
 
-        # Generate arrows for the best move if provided
-        arrows = []
-        if best_move_output:
-            from_square = chess.parse_square(best_move_output["from"])
-            to_square = chess.parse_square(best_move_output["to"])
-            arrows = [(from_square, to_square)]
+        # Use chess.svg to generate SVG data
+        svg_data = chess.svg.board(board=board)
 
-        # Create the SVG representation of the chessboard
-        svg_data = chess.svg.board(board=board, arrows=arrows)
+        # Create output path
+        os.makedirs("pipe", exist_ok=True)
+        png_path = os.path.join("pipe", "06_digital_image.png")
 
-        # Use CairoSVG to convert SVG to PNG directly
-        png_output_path = os.path.join("pipe/06_digital_image.png")
-        os.makedirs(os.path.dirname(png_output_path), exist_ok=True)  # Ensure directory exists
-
-        # Convert SVG data to PNG using cairosvg
-        cairosvg.svg2png(bytestring=svg_data.encode("utf-8"), write_to=png_output_path)
+        # Redirect stdout to devnull to suppress output
+        import sys
+        with open(os.devnull, 'w') as devnull:
+            with redirect_stdout(devnull):
+                # Convert SVG to PNG using html2image
+                from html2image import Html2Image
+                hti = Html2Image(
+                    output_path='pipe',
+                    custom_flags=['--headless=new', '--disable-gpu', '--log-level=3', '--silent'],
+                    size=(400, 400)
+                )
+                
+                # Create HTML with the SVG and save as PNG
+                html = f'<html><body style="margin:0;padding:0;">{svg_data}</body></html>'
+                hti.screenshot(html_str=html, save_as="06_digital_image.png", size=(400, 400))
